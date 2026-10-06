@@ -505,6 +505,7 @@ class Gsitemap extends Module
      * Module front controllers are stored in the meta table as "module-{module_name}-{controller}".
      * When no custom URL rewrite is set for them, Link::getPageLink() returns a non rewritten URL
      * (index.php?controller=module-...), so they must be built with Link::getModuleLink().
+     * The page name is parsed the same way as in Dispatcher::getController().
      *
      * @param Link $link
      * @param string $page meta page name
@@ -514,18 +515,8 @@ class Gsitemap extends Module
      */
     protected function getMetaPageLink(Link $link, $page, $id_lang)
     {
-        if (strpos($page, 'module-') === 0) {
-            $parts = explode('-', substr($page, strlen('module-')));
-
-            for ($n = 1; $n < count($parts); ++$n) {
-                $module_name = implode('-', array_slice($parts, 0, $n));
-                $controller = implode('-', array_slice($parts, $n));
-                if (Validate::isModuleName($module_name)
-                    && file_exists(_PS_MODULE_DIR_ . $module_name . '/controllers/front/' . $controller . '.php')
-                ) {
-                    return $link->getModuleLink($module_name, $controller, [], null, $id_lang);
-                }
-            }
+        if (preg_match('#^module-([a-z0-9_-]+)-([a-z0-9_]+)$#i', $page, $matches)) {
+            return $link->getModuleLink($matches[1], $matches[2], [], null, $id_lang);
         }
 
         return $link->getPageLink($page, null, $id_lang);
