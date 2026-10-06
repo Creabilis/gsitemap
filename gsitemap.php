@@ -478,7 +478,12 @@ class Gsitemap extends Module
 
             $url = '';
             if (!in_array($meta['id_meta'], explode(',', Configuration::get('GSITEMAP_DISABLE_LINKS')))) {
-                $url = $link->getPageLink($meta['page'], null, $lang['id_lang']);
+                try {
+                    $url = $this->getMetaPageLink($link, $meta['page'], (int) $lang['id_lang']);
+                } catch (PrestaShopException $e) {
+                    // The route of this page requires parameters (e.g. an order reference), it cannot be in the sitemap
+                    continue;
+                }
 
                 if (!$this->addLinkToSitemap($link_sitemap, [
                     'type' => 'meta',
@@ -492,6 +497,38 @@ class Gsitemap extends Module
         }
 
         return true;
+    }
+
+    /**
+     * Get the URL of a meta page
+     *
+     * Module front controllers are stored in the meta table as "module-{module_name}-{controller}".
+     * When no custom URL rewrite is set for them, Link::getPageLink() returns a non rewritten URL
+     * (index.php?controller=module-...), so they must be built with Link::getModuleLink().
+     *
+     * @param Link $link
+     * @param string $page meta page name
+     * @param int $id_lang language identifier
+     *
+     * @return string
+     */
+    protected function getMetaPageLink(Link $link, $page, $id_lang)
+    {
+        if (strpos($page, 'module-') === 0) {
+            $parts = explode('-', substr($page, strlen('module-')));
+
+            for ($n = 1; $n < count($parts); ++$n) {
+                $module_name = implode('-', array_slice($parts, 0, $n));
+                $controller = implode('-', array_slice($parts, $n));
+                if (Validate::isModuleName($module_name)
+                    && file_exists(_PS_MODULE_DIR_ . $module_name . '/controllers/front/' . $controller . '.php')
+                ) {
+                    return $link->getModuleLink($module_name, $controller, [], null, $id_lang);
+                }
+            }
+        }
+
+        return $link->getPageLink($page, null, $id_lang);
     }
 
     /**
