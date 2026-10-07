@@ -152,12 +152,9 @@ class Gsitemap extends Module
                 continue;
             }
 
-            // We also remove best-sales, manufacturer and supplier when the feature is disabled in back office settings,
-            // because they are then automatically excluded from the sitemap
-            if (($meta['page'] === 'best-sales' && !$this->isBestSellersListingEnabled())
-                || ($meta['page'] === 'manufacturer' && !$this->isManufacturerListingEnabled())
-                || ($meta['page'] === 'supplier' && !$this->isSupplierListingEnabled())
-            ) {
+            // We also remove best-sales, manufacturer and supplier,
+            // because they are managed automatically depending on back office settings
+            if ($meta['page'] === 'best-sales' || $meta['page'] === 'manufacturer' || $meta['page'] === 'supplier') {
                 continue;
             }
 
